@@ -76,6 +76,7 @@ export default {
   },
   data() {
     return {
+      newWin: null,
       basicComponents: allWidget.basicComponents,
       imgComponents: allWidget.imgComponents,
       assistComponents: allWidget.assistComponents,
@@ -92,12 +93,12 @@ export default {
       this.$store.commit('setConfigTab', value)
     },
     handlePreview() {
-      let newWin = window.open(this.$api.previewUrl());
+      this.newWin = window.open(this.$api.previewUrl());
       let timer = setInterval(() => {
-        newWin.postMessage(this.pageData, '*');
+        this.newWin.postMessage(this.pageData, this.$api.previewUrl());
       }, 200);
       return;
-      window.addEventListener('message', event => {
+      this.newWin.addEventListener('message', event => {
         if (event.origin !== this.$api.previewOrigin()) return;
         if (event.data === 'Received') clearInterval(timer)
       }, false);
@@ -113,9 +114,14 @@ export default {
       this.$store.commit('setPageData', initialPageData);
     },
     handleSave() {
-      this.$util.setLStorage('pageData', this.pageData,true);
-			this.$util.setSStorage('pageData', this.pageData, false);
-      this.$alert('保存成功', { showClose: false });
+			this.$util.setSStorage('pageData', this.pageData, true);
+      this.newWin.postMessage(this.pageData, this.$api.previewUrl());
+      this.$message({
+        message: '恭喜你，这是一条成功消息',
+        type: 'success',
+        duration: 1500
+      });
+      // this.$alert('保存成功', { showClose: false });
     }
   },
   mounted() {
@@ -128,7 +134,7 @@ export default {
     })
   },
   created() {
-    let pageData = this.$util.getLStorage('pageData',true);
+    let pageData = this.$util.getSStorage('pageData', true);
     if (pageData) {
       this.$store.commit('setPageData', pageData);
       if (pageData.config.theme) this.$store.commit('setSelectTheme', pageData.config.theme.value)
